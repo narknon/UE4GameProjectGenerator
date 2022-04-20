@@ -2,6 +2,7 @@
 
 #include "FileHelper.h"
 #include "GenericPlatformFile.h"
+#include "Interface.h"
 #include "ModuleManager.h"
 #include "Package.h"
 #include "HAL/FileManager.h"
@@ -84,6 +85,20 @@ int32 UProjectGeneratorCommandlet::Main(const FString& Params) {
 	
 	return MainInternal(ResultParams);
 }
+
+bool CopyModuleFiles(const TCHAR* FilenameInner, bool bIsDirectoryInner);
+
+class FCopyModuleFilesVisitor final : public IPlatformFile::FDirectoryVisitor
+{
+public:
+	virtual bool Visit(const TCHAR* FilenameInner, bool bIsDirectoryInner) override
+	{
+		// You may want to promote the 'CopyModuleFiles' function from a lambda to a regular function.
+		// Or you could copy the code from that lambda and put it in here.
+		return CopyModuleFiles(FilenameInner, bIsDirectoryInner);
+	}
+};
+
 
 int32 UProjectGeneratorCommandlet::MainInternal(FCommandletRunParams& Params) {
 	UE_LOG(LogProjectGeneratorCommandlet, Display, TEXT("Collecting plugin module list"));
@@ -292,7 +307,8 @@ int32 UProjectGeneratorCommandlet::MainInternal(FCommandletRunParams& Params) {
 					return MoveModuleFilesRecursive(Filename, TargetModuleDirectory, FilenameInner, bIsDirectoryInner);
 				};
 
-				PlatformFile.IterateDirectoryRecursively(Filename, CopyModuleFiles);
+				FCopyModuleFilesVisitor Visitor;
+				PlatformFile.IterateDirectoryRecursively(Filename, Visitor);
 				AllGameModulesProcessed.Add(ModuleName);
 				PluginModulesCopied++;
 			}
@@ -586,6 +602,8 @@ const TMap<UObject*, FString>& GetSpecialObjectIncludePaths() {
 	}
 	return ResultMap;
 }
+
+
 
 //Handles some special paths inside of the CoreUObject specifically
 bool UProjectGeneratorCommandlet::GetSpecialObjectIncludePath(UObject* Object, FString& OutIncludePath) {
