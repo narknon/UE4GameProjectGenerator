@@ -1,6 +1,7 @@
 #include "ProjectGeneratorCommandlet.h"
 
 #include "GenericPlatformFile.h"
+#include "HAL/FileManager.h"
 #include "Paths.h"
 #include "PlatformFilemanager.h"
 #include "PluginManifest.h"
