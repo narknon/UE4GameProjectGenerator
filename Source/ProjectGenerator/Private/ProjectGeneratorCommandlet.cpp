@@ -386,7 +386,7 @@ int32 UProjectGeneratorCommandlet::MainInternal(FCommandletRunParams& Params) {
 	};
 	//Now run the handler for each module we found in the header dump
 	FModuleDirIterator Visitor;
-	PlatformFile.IterateDirectory(Filename, Visitor);
+	PlatformFile.IterateDirectory(*Params.GeneratedHeaderDir, Visitor);
 	UE_LOG(LogProjectGeneratorCommandlet, Display, TEXT("Handled %d plugin modules and %d game modules"), PluginModulesCopied, GameModulesCopied);
 
 	TSet<FString> AllGamePluginsProcessed;
