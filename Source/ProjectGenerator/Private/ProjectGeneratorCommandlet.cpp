@@ -100,6 +100,17 @@ public:
 	}
 };
 
+class FModuleInnerDirIterator final : public IPlatformFile::FDirectoryVisitor
+{
+public:
+	bool ModuleDirIterator(const TCHAR* InnerFilename, bool bIsDirectoryInner);
+
+	virtual bool Visit(const TCHAR* InnerFilename, bool bIsDirectoryInner) override
+	{
+		//Only interested in actual module directories and not loose files
+		return ModuleDirIterator(InnerFilename, bIsDirectoryInner);
+	};
+};
 
 class FModuleDirIterator final : public IPlatformFile::FDirectoryVisitor
 {
@@ -113,6 +124,8 @@ public:
 	};
 };
 
+
+const TCHAR* Filename;
 
 int32 UProjectGeneratorCommandlet::MainInternal(FCommandletRunParams& Params) {
 	UE_LOG(LogProjectGeneratorCommandlet, Display, TEXT("Collecting plugin module list"));
@@ -373,7 +386,6 @@ int32 UProjectGeneratorCommandlet::MainInternal(FCommandletRunParams& Params) {
 	};
 	//Now run the handler for each module we found in the header dump
 	FModuleDirIterator Visitor;
-	const TCHAR* Filename;
 	PlatformFile.IterateDirectory(Filename, Visitor);
 	UE_LOG(LogProjectGeneratorCommandlet, Display, TEXT("Handled %d plugin modules and %d game modules"), PluginModulesCopied, GameModulesCopied);
 
@@ -528,6 +540,10 @@ void UProjectGeneratorCommandlet::DiscoverPlugins(const FString& PluginDirectory
 	PlatformFile.IterateDirectory(*PluginDirectory, Visitor);
 }
 
+const TCHAR* InnerFilename;
+
+bool bIsDirectoryInner;
+
 void UProjectGeneratorCommandlet::DiscoverModules(const FString& SourceDirectory, TSet<FString>& OutModulesFound) {
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
@@ -544,21 +560,25 @@ void UProjectGeneratorCommandlet::DiscoverModules(const FString& SourceDirectory
 			
 			int32 ModulesFoundInDirectory = 0;
 			TArray<FString> SubDirectoryPaths;
-			
-			PlatformFile.IterateDirectory(Filename, [&](const TCHAR* InnerFilename, bool bIsDirectoryInner) {
+
+			FModuleInnerDirIterator Visitor;
+			PlatformFile.IterateDirectory(InnerFilename, Visitor);
+			{
 				const FString InnerFilenameString = FString(InnerFilename);
-				if (bIsDirectoryInner) {
+				if (bIsDirectoryInner)
+				{
 					SubDirectoryPaths.Add(InnerFilenameString);
-					
-				} else if (InnerFilenameString.EndsWith(TEXT(".Build.cs"))) {
+				}
+				else if (InnerFilenameString.EndsWith(TEXT(".Build.cs")))
+				{
 					const FString BaseFilename = FPaths::GetBaseFilename(InnerFilenameString);
 					const FString ModuleName = BaseFilename.Mid(0, BaseFilename.Len() - 6);
-					
+
 					OutModulesFound.Add(ModuleName);
 					ModulesFoundInDirectory++;
 				}
 				return true;
-			});
+			};
 
 			//Module build file has been found at that directory, we do not consider any sub-directories
 			if (ModulesFoundInDirectory != 0) {
@@ -574,6 +594,8 @@ void UProjectGeneratorCommandlet::DiscoverModules(const FString& SourceDirectory
 	};
 	DirectoryIterator(*SourceDirectory, true);
 }
+
+int32 UE_ARRAY_COUNT(const TCHAR* Str);
 
 FString UProjectGeneratorCommandlet::GetIncludePathForObject(UObject* Object) {
 	//We cannot use "IncludePath" metadata attribute here because it's not added for UScriptStruct,
