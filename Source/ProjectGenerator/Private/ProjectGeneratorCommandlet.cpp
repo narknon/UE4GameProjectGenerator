@@ -1,4 +1,8 @@
 #include "ProjectGeneratorCommandlet.h"
+
+#include "GenericPlatformFile.h"
+#include "Paths.h"
+#include "PlatformFilemanager.h"
 #include "PluginManifest.h"
 #include "ProjectDescriptor.h"
 #include "Misc/OutputDeviceFile.h"
