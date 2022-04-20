@@ -1,6 +1,9 @@
 #include "ProjectGeneratorCommandlet.h"
 
+#include "FileHelper.h"
 #include "GenericPlatformFile.h"
+#include "ModuleManager.h"
+#include "Package.h"
 #include "HAL/FileManager.h"
 #include "Paths.h"
 #include "PlatformFilemanager.h"
@@ -250,61 +253,78 @@ int32 UProjectGeneratorCommandlet::MainInternal(FCommandletRunParams& Params) {
 
 	int32 PluginModulesCopied = 0;
 	int32 GameModulesCopied = 0;
-	
-	TFunction<bool(const TCHAR*, bool)> ModuleDirIterator = [&](const TCHAR* Filename, bool bIsDirectory) {
+
+	IPlatformFile::FDirectoryVisitor& ModuleDirIterator = [&](const TCHAR* Filename, bool bIsDirectory)
+	{
 		//Only interested in actual module directories and not loose files
-		if (!bIsDirectory) {
+		if (!bIsDirectory)
+		{
 			return true;
 		}
-		
+
 		const FString ModuleName = FPaths::GetCleanFilename(Filename);
 
 		//This module is owned by one of the plugins
-		if (const FString* OwnerPluginName = ModuleNameToOwnerPluginName.Find(ModuleName)) {
-
+		if (const FString* OwnerPluginName = ModuleNameToOwnerPluginName.Find(ModuleName))
+		{
 			//Check if it's one of the existing engine plugins, then we return early and discard the module
-			if (const TSet<FString>* OwnerPluginModules = EnginePlugins.Find(*OwnerPluginName)) {
-
+			if (const TSet<FString>* OwnerPluginModules = EnginePlugins.Find(*OwnerPluginName))
+			{
 				//Print a warning when the module belongs to the plugin, but engine plugin does not have that module
-				if (!OwnerPluginModules->Contains(ModuleName)) {
-					UE_LOG(LogProjectGeneratorCommandlet, Warning, TEXT("Engine plugin %s does not have a module %s present in the game"), OwnerPluginName->operator*(), *ModuleName);
+				if (!OwnerPluginModules->Contains(ModuleName))
+				{
+					UE_LOG(LogProjectGeneratorCommandlet, Warning,
+					       TEXT("Engine plugin %s does not have a module %s present in the game"),
+					       OwnerPluginName->operator*(), *ModuleName);
 				}
 				return true;
 			}
 
 			//Module does not belong to the any of the existing engine plugins
-			if (const FString* ResultPluginFile = GameImpliedPluginFileLocations.Find(*OwnerPluginName)) {
-
+			if (const FString* ResultPluginFile = GameImpliedPluginFileLocations.Find(*OwnerPluginName))
+			{
 				const FString PluginDir = FPaths::GetPath(*ResultPluginFile);
 				const FString TargetModuleDirectory = PluginDir / TEXT("Source") / ModuleName;
 
-				TFunction<bool(const TCHAR*, bool)> CopyModuleFiles = [&](const TCHAR* FilenameInner, bool bIsDirectoryInner) {
+				TFunction<bool(const TCHAR*, bool)> CopyModuleFiles = [&
+					](const TCHAR* FilenameInner, bool bIsDirectoryInner)
+				{
 					return MoveModuleFilesRecursive(Filename, TargetModuleDirectory, FilenameInner, bIsDirectoryInner);
 				};
-				
+
 				PlatformFile.IterateDirectoryRecursively(Filename, CopyModuleFiles);
 				AllGameModulesProcessed.Add(ModuleName);
 				PluginModulesCopied++;
-			} else {
+			}
+			else
+			{
 				//No registered game module associated with this plugin, print a warning
-				UE_LOG(LogProjectGeneratorCommandlet, Warning, TEXT("Discarding game module %s because associated plugin %s does not exist"), *ModuleName, OwnerPluginName->operator*());
+				UE_LOG(LogProjectGeneratorCommandlet, Warning,
+				       TEXT("Discarding game module %s because associated plugin %s does not exist"), *ModuleName,
+				       OwnerPluginName->operator*());
 			}
 			return true;
 		}
-		
+
 		//If this is the normal engine module, we skip it altogether
-		if (EngineModules.Contains(ModuleName)) {
+		if (EngineModules.Contains(ModuleName))
+		{
 			return true;
 		}
 
 		//Otherwise assume it is a normal game module. If it was not declared inside of the project file, output a warning
-		if (!ProjectModuleNames.Contains(ModuleName)) {
+		if (!ProjectModuleNames.Contains(ModuleName))
+		{
 			EngineModulesForcedToBeGameModules.Add(ModuleName);
-			UE_LOG(LogProjectGeneratorCommandlet, Warning, TEXT("Module %s does not belong to the engine or any plugins, neither it is listed in the project modules. Assuming it is a game module"), *ModuleName);
+			UE_LOG(LogProjectGeneratorCommandlet, Warning,
+			       TEXT(
+				       "Module %s does not belong to the engine or any plugins, neither it is listed in the project modules. Assuming it is a game module"
+			       ), *ModuleName);
 		}
 		const FString TargetModuleDirectory = ProjectSourceDir / ModuleName;
 
-		TFunction<bool(const TCHAR*, bool)> CopyModuleFiles = [&](const TCHAR* FilenameInner, bool bIsDirectoryInner) {
+		TFunction<bool(const TCHAR*, bool)> CopyModuleFiles = [&](const TCHAR* FilenameInner, bool bIsDirectoryInner)
+		{
 			return MoveModuleFilesRecursive(Filename, TargetModuleDirectory, FilenameInner, bIsDirectoryInner);
 		};
 
@@ -314,7 +334,7 @@ int32 UProjectGeneratorCommandlet::MainInternal(FCommandletRunParams& Params) {
 		AllGameModulesProcessed.Add(ModuleName);
 		LooseGameModuleNames.Add(ModuleName);
 		GameModulesCopied++;
-		
+
 		return true;
 	};
 
