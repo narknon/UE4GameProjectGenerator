@@ -1,5 +1,6 @@
 #include "ProjectGeneratorCommandlet.h"
 
+#if ENGINE_MINOR_VERSION < 24
 #include "FileHelper.h"
 #include "GenericPlatformFile.h"
 #include "Paths.h"
@@ -7,6 +8,7 @@
 #include "Interface.h"
 #include "ModuleManager.h"
 #include "Package.h"
+#endif
 #include "PluginManifest.h"
 #include "ProjectDescriptor.h"
 #include "Misc/OutputDeviceFile.h"
