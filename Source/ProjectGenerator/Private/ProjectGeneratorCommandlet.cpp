@@ -1,6 +1,6 @@
 #include "ProjectGeneratorCommandlet.h"
 
-#if ENGINE_MINOR_VERSION < 24
+#if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION < 24
 #include "FileHelper.h"
 #include "GenericPlatformFile.h"
 #include "Paths.h"
@@ -546,17 +546,8 @@ FString UProjectGeneratorCommandlet::GetIncludePathForObject(UObject* Object) {
 	static const TCHAR PublicFolderName[]  = TEXT("Public/");
 	static const TCHAR PrivateFolderName[] = TEXT("Private/");
 	static const TCHAR ClassesFolderName[] = TEXT("Classes/");
-#if ENGINE_MINOR_VERSION >= 24 // ARRAY_COUNT Deprecated and changed to UE_ARRAY_COUNT in 4.24 TODO: Clean this up instead of repeating the entire thing.
-	if (IncludePath.StartsWith(PublicFolderName)) {
-		IncludePath.RemoveAt(0, UE_ARRAY_COUNT(PublicFolderName) - 1);
-	}
-	if (IncludePath.StartsWith(PrivateFolderName)) {
-		IncludePath.RemoveAt(0, UE_ARRAY_COUNT(PrivateFolderName) - 1);
-	}
-	if (IncludePath.StartsWith(ClassesFolderName)) {
-		IncludePath.RemoveAt(0, UE_ARRAY_COUNT(ClassesFolderName) - 1);
-	}
-#else
+
+	// ARRAY_COUNT Deprecated and changed to UE_ARRAY_COUNT in 4.24, but we use the former for wider compatability.
 	if (IncludePath.StartsWith(PublicFolderName)) {
 		IncludePath.RemoveAt(0, ARRAY_COUNT(PublicFolderName) - 1);
 	}
@@ -566,7 +557,6 @@ FString UProjectGeneratorCommandlet::GetIncludePathForObject(UObject* Object) {
 	if (IncludePath.StartsWith(ClassesFolderName)) {
 		IncludePath.RemoveAt(0, ARRAY_COUNT(ClassesFolderName) - 1);
 	}
-#endif
 	return IncludePath;
 }
 
