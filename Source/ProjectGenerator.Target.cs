@@ -8,7 +8,9 @@ public class ProjectGeneratorTarget : TargetRules
 	public ProjectGeneratorTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
+#if UE_4_24_OR_LATER
 		DefaultBuildSettings = BuildSettingsVersion.V2;
+#endif
 		ExtraModuleNames.AddRange( new string[] { "ProjectGenerator" } );
 	}
 }
