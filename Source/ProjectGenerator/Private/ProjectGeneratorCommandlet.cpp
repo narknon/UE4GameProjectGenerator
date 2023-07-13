@@ -433,7 +433,9 @@ void UProjectGeneratorCommandlet::GenerateEditorFile(FCommandletRunParams& Param
 	TargetFileOutputDevice.Logf(TEXT("	public %s%sTarget(TargetInfo Target) : base(Target) {"), *Params.ProjectName, *EditorType);
 
 	TargetFileOutputDevice.Logf(TEXT("		Type = TargetType.%s;"), *EditorType);
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION > 24
 	TargetFileOutputDevice.Logf(TEXT("		DefaultBuildSettings = BuildSettingsVersion.V2;"));
+#endif
 
 	TargetFileOutputDevice.Logf(TEXT("		ExtraModuleNames.AddRange(new string[] {"));
 	for (const FString& GameModuleName : GameModuleNames) {
