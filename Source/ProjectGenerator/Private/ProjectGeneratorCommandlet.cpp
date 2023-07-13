@@ -536,6 +536,7 @@ FString UProjectGeneratorCommandlet::GetIncludePathForObject(UObject* Object) {
 	//support them at some point. However, "ModuleRelativePath" is present on all of these objects,
 	//and even on function and property objects. According to UHT source, only difference
 	//between these two is that include path has Public/Private/Classes prefixes stripped. We can
+	//between these two is that include path has Public/Private/Classes prefixes stripped. We can
 	//mimic that behavior and get uniform include paths for all defined objects
 
 	UPackage* Package = Object->GetOutermost();
@@ -554,7 +555,17 @@ FString UProjectGeneratorCommandlet::GetIncludePathForObject(UObject* Object) {
 	static const TCHAR PrivateFolderName[] = TEXT("Private/");
 	static const TCHAR ClassesFolderName[] = TEXT("Classes/");
 
-	// ARRAY_COUNT Deprecated and changed to UE_ARRAY_COUNT in 4.24, but we use the former for wider compatability.
+#if ENGINE_MAJOR_VERSION == 5 || ENGINE_MINOR_VERSION >= 24 // ARRAY_COUNT was deprecated and changed to UE_ARRAY_COUNT in 4.24 (and was removed over 5.0) TODO: Clean this up instead of repeating the entire thing.
+	if (IncludePath.StartsWith(PublicFolderName)) {
+		IncludePath.RemoveAt(0, UE_ARRAY_COUNT(PublicFolderName) - 1);
+	}
+	if (IncludePath.StartsWith(PrivateFolderName)) {
+		IncludePath.RemoveAt(0, UE_ARRAY_COUNT(PrivateFolderName) - 1);
+	}
+	if (IncludePath.StartsWith(ClassesFolderName)) {
+		IncludePath.RemoveAt(0, UE_ARRAY_COUNT(ClassesFolderName) - 1);
+	}
+#else
 	if (IncludePath.StartsWith(PublicFolderName)) {
 		IncludePath.RemoveAt(0, ARRAY_COUNT(PublicFolderName) - 1);
 	}
@@ -564,6 +575,7 @@ FString UProjectGeneratorCommandlet::GetIncludePathForObject(UObject* Object) {
 	if (IncludePath.StartsWith(ClassesFolderName)) {
 		IncludePath.RemoveAt(0, ARRAY_COUNT(ClassesFolderName) - 1);
 	}
+#endif
 	return IncludePath;
 }
 
